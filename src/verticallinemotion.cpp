@@ -3,35 +3,20 @@
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void motion(HWND hwnd);
 
-// Global variables for the ball's position and square motion
-int ballX = 0;                   // Initial x position of the ball
-int ballY = 0;                   // Initial y position of the ball
-int centerX = 250;               // Starting x position for the square path
-int centerY = 250;               // Starting y position for the square path
-int sideLength = 200;            // Side length of the square path
-int step = 1
-;                    // Step for square motion direction
+// Global variables for the ball's position and vertical line motion
+int ballX = 150;               // Fixed x position of the ball (center of the window)
+int ballY = 100;                 // Initial y position of the ball
+int centerY = 150;             // Center y position for vertical motion
+int maxOffset = 100;           // Maximum distance the ball moves up and down
+int direction = 1;             // 1 = moving down, -1 = moving up
 
-// This function handles the square motion of the ball
+// This function handles the vertical line motion of the ball
 void motion(HWND hwnd) {
-    // Move the ball in a square path
-    switch (step) {
-        case 0: // Move right
-            ballX += 2;
-            if (ballX >= centerX + sideLength) step = 1;
-            break;
-        case 1: // Move up
-            ballY -= 2;
-            if (ballY <= centerY - sideLength) step = 2;
-            break;
-        case 2: // Move left
-            ballX -= 2;
-            if (ballX <= centerX) step = 3;
-            break;
-        case 3: // Move down
-            ballY += 2;
-            if (ballY >= centerY) step = 0;
-            break;
+    // Update the ball's y position for vertical line motion
+    ballY += direction * 2;    // Adjust the speed by changing the increment
+    // Reverse direction when reaching the vertical limits
+    if (ballY >= centerY + maxOffset || ballY <= centerY - maxOffset) {
+        direction *= -1;
     }
 
     // Redraw the window
@@ -66,7 +51,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             SelectObject(hdc, hBrush);
 
             // Draw the ball (an ellipse)
-            Ellipse(hdc, ballX, ballY, ballX + 100, ballY + 100);
+            Ellipse(hdc, ballX - 50, ballY - 50, ballX + 50, ballY + 50);
 
             // Clean up
             DeleteObject(hBrush);
