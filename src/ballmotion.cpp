@@ -1,50 +1,41 @@
 #include <windows.h>
-#include <math.h>
+#include <math.h> 
 
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-void motion(HWND hwnd, float deltaTime);
-
-// Struct for storing physics-related data
-struct PhysicsData {
-    float positionX;
-    float positionY;
+// Structure for the physics entity
+struct PhysicsEntity {
+    float posX;
+    float posY;
     float velocityX;
     float velocityY;
     float accelerationX;
     float accelerationY;
+    float mass;
 };
 
-// Initialize the physics data for the ball
-PhysicsData ballPhysics = {150.0f, 150.0f, 0.0f, 0.0f, 0.0f, 0.0f};
-
-// Global variables for the ball’s circular motion
-float angle = 0.0f;
-const float radius = 100.0f;
-int ballX = 0;
-int ballY = 0;
-int centerX = 150;
-int centerY = 150;
-
-// Simulates the physics for the ball and updates its position
-void simulatePhysics(PhysicsData& physics, float deltaTime) {
+// Update physics function based on deltaTime
+void updatePhysics(PhysicsEntity& entity, float deltaTime) {
     // Update velocity based on acceleration
-    physics.velocityX += physics.accelerationX * deltaTime;
-    physics.velocityY += physics.accelerationY * deltaTime;
+    entity.velocityX += entity.accelerationX * deltaTime;
+    entity.velocityY += entity.accelerationY * deltaTime;
 
     // Update position based on velocity
-    physics.positionX += physics.velocityX * deltaTime;
-    physics.positionY += physics.velocityY * deltaTime;
+    entity.posX += entity.velocityX * deltaTime;
+    entity.posY += entity.velocityY * deltaTime;
+
+    // Optional: Implement custom bounds or collision detection
+    if (entity.posX < 0 || entity.posX > 300) entity.velocityX *= -1;
+    if (entity.posY < 0 || entity.posY > 300) entity.velocityY *= -1;
 }
 
-// This function handles the motion of the ball using physics data
-void motion(HWND hwnd, float deltaTime) {
-    simulatePhysics(ballPhysics, deltaTime);
+// Global entity representing the ball
+PhysicsEntity ball = {150, 150, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
 
-    // Apply circular motion by modifying x and y based on angle
-    angle += 0.1f * deltaTime;
-    ballX = (int)(ballPhysics.positionX + radius * cos(angle) - 50);
-    ballY = (int)(ballPhysics.positionY + radius * sin(angle) - 50);
+// Function to handle motion based on physics engine updates
+void motion(HWND hwnd, PhysicsEntity& entity, float deltaTime) {
+    // Update physics
+    updatePhysics(entity, deltaTime);
 
+    // Request a redraw
     InvalidateRect(hwnd, NULL, TRUE);
 }
 
@@ -71,7 +62,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             HBRUSH hBrush = CreateSolidBrush(RGB(255, 0, 0));
             SelectObject(hdc, hBrush);
 
-            Ellipse(hdc, ballX, ballY, ballX + 100, ballY + 100);
+            // Draw the ball based on its updated position
+            Ellipse(hdc, (int)ball.posX, (int)ball.posY, (int)ball.posX + 20, (int)ball.posY + 20);
 
             DeleteObject(hBrush);
             EndPaint(hwnd, &ps);
@@ -82,7 +74,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-    const char CLASS_NAME[] = "BallWindowClass";
+    const char CLASS_NAME[] = "PhysicsWindowClass";
 
     WNDCLASS wc = {};
     wc.lpfnWndProc = WindowProc;
@@ -91,11 +83,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     RegisterClass(&wc);
 
-    HWND hwnd = CreateWindowEx(
-        0, CLASS_NAME, "Ball with Physics Engine", WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 300, 300,
-        NULL, NULL, hInstance, NULL
-    );
+    HWND hwnd = CreateWindowEx(0, CLASS_NAME, "Physics Simulation", WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT, 300, 300, NULL, NULL, hInstance, NULL);
 
     if (hwnd == NULL) {
         return 0;
@@ -104,14 +93,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ShowWindow(hwnd, nCmdShow);
 
     MSG msg;
-    float deltaTime = 0.02f;  // Time between frames
+    float deltaTime = 0.016f; // Assuming ~60 frames per second
     while (GetMessage(&msg, NULL, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
 
-        motion(hwnd, deltaTime);
+        // Update and render the physics-based motion of the entity
+        motion(hwnd, ball, deltaTime);
 
-        Sleep(20);
+        Sleep(16); // 16 ms sleep for ~60 FPS
     }
 
     return 0;
