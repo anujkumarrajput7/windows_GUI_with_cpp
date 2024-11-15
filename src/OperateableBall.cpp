@@ -1,27 +1,18 @@
 #include <windows.h>
-#include <math.h> // Include for sin and cos functions
+#include <cmath>
+#include <iostream>
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 void motion(HWND hwnd);
 
-// Global variables for the ball's position and circular motion
-float angle = 0.0f; // Angle in radians
-const float radius = 100.0f; // Radius of the circular path
-int ballX = 0; // Initial x position of the ball
-int ballY = 0; // Initial y position of the ball
-int centerX = 150; // Center x position of the circle
-int centerY = 150; // Center y position of the circle
+// Global variables for the ball's position
+int ballX = 150; // Initial x position of the ball
+int ballY = 150; // Initial y position of the ball
+float speed = 5.0f; // Speed of the ball's movement
 
 // This function handles the motion of the ball
 void motion(HWND hwnd) {
-    // Update the angle
-    angle += 0.1f; // Increment the angle (adjust speed of rotation)
-
-    // Calculate the ball's position in circular motion
-    ballX = centerX + (int)(radius * cos(angle)) - 50; // Subtract half the ball's width
-    ballY = centerY + (int)(radius * sin(angle)) - 50; // Subtract half the ball's height
-
-    // Redraw the window
+    // Redraw the window if the ball's position has changed
     InvalidateRect(hwnd, NULL, TRUE); // Request a redraw
 }
 
@@ -31,32 +22,45 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             PostQuitMessage(0);
             return 0;
 
+        // Handle keyboard input for arrow keys
+        case WM_KEYDOWN: {
+            // Adjust the ball's position based on which arrow key is pressed
+            switch (wParam) {
+                case VK_LEFT:   // Left arrow key
+                    ballX -= speed;
+                    break;
+                case VK_RIGHT:  // Right arrow key
+                    ballX += speed;
+                    break;
+                case VK_UP:     // Up arrow key
+                    ballY -= speed;
+                    break;
+                case VK_DOWN:   // Down arrow key
+                    ballY += speed;
+                    break;
+            }
+            motion(hwnd); // Update the ball's movement on the window
+            return 0;
+        }
+
         // Handle the WM_ERASEBKGND message to change the background color
         case WM_ERASEBKGND: {
             HDC hdc = (HDC)wParam; // Get the device context
             RECT rect;
             GetClientRect(hwnd, &rect); // Get the client area rectangle
-            
-            // Set the background color (e.g., light blue)
             HBRUSH hBrush = CreateSolidBrush(RGB(173, 216, 230)); // Light blue color
             FillRect(hdc, &rect, hBrush); // Fill the background with the brush
-
-            DeleteObject(hBrush); // Clean up the brush
-            return 1; // Indicate that the background has been erased
+            DeleteObject(hBrush);
+            return 1;
         }
 
         case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
 
-            // Set the color for the ball
-            HBRUSH hBrush = CreateSolidBrush(RGB(255, 0, 0)); // Red color
+            HBRUSH hBrush = CreateSolidBrush(RGB(255, 0, 0)); // Red color for the ball
             SelectObject(hdc, hBrush);
-
-            // Draw the ball (an ellipse)
-            Ellipse(hdc, ballX, ballY, ballX + 100, ballY + 100); // x1, y1, x2, y2
-
-            // Clean up
+            Ellipse(hdc, ballX - 50, ballY - 50, ballX + 50, ballY + 50); // Draw the ball
             DeleteObject(hBrush);
             EndPaint(hwnd, &ps);
             return 0;
@@ -68,7 +72,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     const char CLASS_NAME[] = "BallWindowClass";
 
-    // Register the window class
     WNDCLASS wc = {};
     wc.lpfnWndProc = WindowProc;
     wc.hInstance = hInstance;
@@ -76,10 +79,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     RegisterClass(&wc);
 
-    // Create the window
     HWND hwnd = CreateWindowEx(
-        0, CLASS_NAME, "Ball in a Window", WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 300, 300,
+        0, CLASS_NAME, "Ball Movement with Arrow Keys", WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT, 400, 400,
         NULL, NULL, hInstance, NULL
     );
 
@@ -91,15 +93,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // Run the message loop
     MSG msg;
+    DWORD lastTime = GetTickCount();
+
     while (GetMessage(&msg, NULL, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
-        
-        // Call the motion function to update the ball's position
-        motion(hwnd);
-        
+
+        // Ensure the window refreshes at 60Hz (~16.67ms per frame)
+        DWORD currentTime = GetTickCount();
+        if (currentTime - lastTime >= 16) { // Check if 16ms have passed
+            motion(hwnd); // Update the ball's position
+            lastTime = currentTime;
+        }
+
         // Sleep for a short time to control the animation speed
-        Sleep(20); // Adjust the speed of the motion
+        Sleep(1); // Optional, but helps maintain control over CPU usage
     }
 
     return 0;
