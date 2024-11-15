@@ -4,7 +4,7 @@
             "type": "cppbuild",
             "label": "C/C++: gcc.exe build active file",
             "command": "C:\\MinGW\\bin\\gcc.exe",
-            "args": [
+            "args": [we
                 "-fdiagnostics-color=always",
                 "-g",
                 "${file}",
