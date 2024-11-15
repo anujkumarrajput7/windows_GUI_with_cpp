@@ -3,7 +3,15 @@ motion karana hai either kyboard input se ya fir function input jo ki physics en
 tumko is file me physics engine nahi lagana hai.
 
 
->>TASK
+>>TASK1
 
 create new file that takes in input from the user and move the ball to the given coordinate,
 make sure the refresh rate is 60hz.
+
+>>TASK2 for future refrence
+
+ add diagonal movement and increase the speed.
+ also make OperatableBall.cpp a function operated and call the functionin main 
+ the parameters are speed in (pixel/sec) and intial position of the ball in x and y coordinate
+aand the default position is in the middle of the window.
+
