@@ -41,3 +41,5 @@ Once the changes are merged and conflicts (if any) are resolved, push them to yo
 bash
 Copy code
 //git push origin main
+7.to compile program
+//g++ -o ballmotion ballmotion.cpp -lgdi32
