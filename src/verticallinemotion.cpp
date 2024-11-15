@@ -14,13 +14,15 @@ int direction = 1;             // 1 = moving down, -1 = moving up
 void motion(HWND hwnd) {
     // Update the ball's y position for vertical line motion
     ballY += direction * 2;    // Adjust the speed by changing the increment
+
     // Reverse direction when reaching the vertical limits
     if (ballY >= centerY + maxOffset || ballY <= centerY - maxOffset) {
         direction *= -1;
     }
 
     // Redraw the window
-    InvalidateRect(hwnd, NULL, TRUE); // Request a redraw
+    InvalidateRect
+    (hwnd, NULL, TRUE); // Request a redraw
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
