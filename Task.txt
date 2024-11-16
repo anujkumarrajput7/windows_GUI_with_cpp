@@ -5,18 +5,18 @@ tumko is file me physics engine nahi lagana hai.
 
 >>TASK1
 
-create new file that takes in input from the user and move the ball to the given coordinate,
+create new file that takes in input from the user and move the ball to the given coordinate,          DONE
 make sure the refresh rate is 60hz.
 
 >>TASK2 for future refrence
 
- add diagonal movement and increase the speed.
+ add diagonal movement and increase the speed.                                                        DONE
  also make OperatableBall.cpp a function operated and call the functionin main 
  the parameters are speed in (pixel/sec) and intial position of the ball in x and y coordinate 
  upperbound x lowerbound = 1080 x 2160.
  and the default position is in the middle of the window.
  
- new file directory structure.
+ new file directory structure.   
     Ball.h -> header definition for the ball.cpp
     Ball.cpp -> I has necessary functions to set the ball's size , color;
     OperatableObject.h -> If needed 
