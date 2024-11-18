@@ -1,20 +1,34 @@
 #include <windows.h>
-#include <cmath>
-#include <iostream>
+#include <algorithm> // To use std::max and std::min
 
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-void motion(HWND hwnd);
+// Constants
+const int BALL_SIZE = 50; // Diameter of the ball
+const int FPS = 60; // Frames per second
+const float MAX_SPEED = 1000.0f / FPS; // Maximum speed (1000 px/sec)
+const float MIN_SPEED = 100.0f / FPS;  // Minimum speed (100 px/sec)
+const float SPEED_STEP = 100.0f / FPS; // Speed increment/decrement
+const COLORREF BACKGROUND_COLOR = RGB(173, 216, 230); // Light blue
+const COLORREF BALL_COLOR = RGB(255, 0, 0);           // Red
 
-// Global variables for the ball's position
-int ballX = 150; // Initial x position of the ball
-int ballY = 150; // Initial y position of the ball
-float speed = 5.0f; // Speed of the ball's movement
+// Ball position and speed
+int ballX = 150, ballY = 150;
+float ballSpeed = 500.0f / FPS; // Initial speed
 
-// This function handles the motion of the ball
-void motion(HWND hwnd) {
-    // Redraw the window if the ball's position has changed
-    InvalidateRect(hwnd, NULL, TRUE); // Request a redraw
+// Keys pressed state
+bool keyUp = false, keyDown = false, keyLeft = false, keyRight = false;
+
+// Function to handle ball movement
+void moveBall(RECT& clientRect) {
+    if (keyUp) 
+        ballY = std::max(0, ballY - static_cast<int>(ballSpeed));
+    if (keyDown) 
+        ballY = std::min(static_cast<int>(clientRect.bottom) - BALL_SIZE, ballY + static_cast<int>(ballSpeed));
+    if (keyLeft) 
+        ballX = std::max(0, ballX - static_cast<int>(ballSpeed));
+    if (keyRight) 
+        ballX = std::min(static_cast<int>(clientRect.right) - BALL_SIZE, ballX + static_cast<int>(ballSpeed));
 }
+
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
@@ -22,46 +36,43 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             PostQuitMessage(0);
             return 0;
 
-        // Handle keyboard input for arrow keys
-        case WM_KEYDOWN: {
-            // Adjust the ball's position based on which arrow key is pressed
-            switch (wParam) {
-                case VK_LEFT:   // Left arrow key
-                    ballX -= speed;
-                    break;
-                case VK_RIGHT:  // Right arrow key
-                    ballX += speed;
-                    break;
-                case VK_UP:     // Up arrow key
-                    ballY -= speed;
-                    break;
-                case VK_DOWN:   // Down arrow key
-                    ballY += speed;
-                    break;
-            }
-            motion(hwnd); // Update the ball's movement on the window
-            return 0;
-        }
+        case WM_KEYDOWN:
+            // Handle arrow keys for movement
+            if (wParam == VK_UP) keyUp = true;
+            if (wParam == VK_DOWN) keyDown = true;
+            if (wParam == VK_LEFT) keyLeft = true;
+            if (wParam == VK_RIGHT) keyRight = true;
 
-        // Handle the WM_ERASEBKGND message to change the background color
-        case WM_ERASEBKGND: {
-            HDC hdc = (HDC)wParam; // Get the device context
-            RECT rect;
-            GetClientRect(hwnd, &rect); // Get the client area rectangle
-            HBRUSH hBrush = CreateSolidBrush(RGB(173, 216, 230)); // Light blue color
-            FillRect(hdc, &rect, hBrush); // Fill the background with the brush
-            DeleteObject(hBrush);
-            return 1;
-        }
+            // Adjust speed with W (increase) and S (decrease)
+            if (wParam == 'W') ballSpeed = std::min(MAX_SPEED, ballSpeed + SPEED_STEP);
+            if (wParam == 'S') ballSpeed = std::max(MIN_SPEED, ballSpeed - SPEED_STEP);
+            return 0;
+
+        case WM_KEYUP:
+            // Reset directional keys
+            if (wParam == VK_UP) keyUp = false;
+            if (wParam == VK_DOWN) keyDown = false;
+            if (wParam == VK_LEFT) keyLeft = false;
+            if (wParam == VK_RIGHT) keyRight = false;
+            return 0;
 
         case WM_PAINT: {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
 
-            HBRUSH hBrush = CreateSolidBrush(RGB(255, 0, 0)); // Red color for the ball
-            SelectObject(hdc, hBrush);
-            Ellipse(hdc, ballX - 50, ballY - 50, ballX + 50, ballY + 50); // Draw the ball
-            DeleteObject(hBrush);
+            // Clear the background
+            RECT rect;
+            GetClientRect(hwnd, &rect);
+            HBRUSH hBrushBackground = CreateSolidBrush(BACKGROUND_COLOR);
+            FillRect(hdc, &rect, hBrushBackground);
+            DeleteObject(hBrushBackground);
+
+            // Draw the ball
+            HBRUSH hBrushBall = CreateSolidBrush(BALL_COLOR);
+            SelectObject(hdc, hBrushBall);
+            Ellipse(hdc, ballX, ballY, ballX + BALL_SIZE, ballY + BALL_SIZE);
+            DeleteObject(hBrushBall);
+
             EndPaint(hwnd, &ps);
             return 0;
         }
@@ -80,34 +91,33 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     RegisterClass(&wc);
 
     HWND hwnd = CreateWindowEx(
-        0, CLASS_NAME, "Ball Movement with Arrow Keys", WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 400, 400,
+        0, CLASS_NAME, "Ball Speed Control", WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT, 500, 500,
         NULL, NULL, hInstance, NULL
     );
 
-    if (hwnd == NULL) {
-        return 0;
-    }
+    if (!hwnd) return 0;
 
     ShowWindow(hwnd, nCmdShow);
 
-    // Run the message loop
     MSG msg;
-    DWORD lastTime = GetTickCount();
+    while (true) {
+        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+            if (msg.message == WM_QUIT) break;
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        } else {
+            // Get the window client area
+            RECT clientRect;
+            GetClientRect(hwnd, &clientRect);
 
-    while (GetMessage(&msg, NULL, 0, 0)) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+            // Move the ball and redraw
+            moveBall(clientRect);
+            InvalidateRect(hwnd, NULL, TRUE);
 
-        // Ensure the window refreshes at 60Hz (~16.67ms per frame)
-        DWORD currentTime = GetTickCount();
-        if (currentTime - lastTime >= 16) { // Check if 16ms have passed
-            motion(hwnd); // Update the ball's position
-            lastTime = currentTime;
+            // Maintain frame rate
+            Sleep(1000 / FPS);
         }
-
-        // Sleep for a short time to control the animation speed
-        Sleep(1); // Optional, but helps maintain control over CPU usage
     }
 
     return 0;
