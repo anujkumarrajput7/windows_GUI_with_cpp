@@ -101,24 +101,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     ShowWindow(hwnd, nCmdShow);
 
     MSG msg;
-    while (true) {
-        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-            if (msg.message == WM_QUIT) break;
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        } else {
-            // Get the window client area
-            RECT clientRect;
-            GetClientRect(hwnd, &clientRect);
+    // Inside the main game loop
+while (true) {
+    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+        if (msg.message == WM_QUIT) break;
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    } else {
+        // Get the window client area
+        RECT clientRect;
+        GetClientRect(hwnd, &clientRect);
 
-            // Move the ball and redraw
-            moveBall(clientRect);
-            InvalidateRect(hwnd, NULL, TRUE);
+        // Move the ball and keep it within bounds
+        moveBall(clientRect);
 
-            // Maintain frame rate
-            Sleep(1000 / FPS);
-        }
+        // Redraw the window
+        InvalidateRect(hwnd, NULL, TRUE);
+
+         // Control refresh rate (240 FPS)
+        Sleep(4); // Sleep for 4 milliseconds (approx. 240 FPS)
     }
+}
+
 
     return 0;
 }
